@@ -33,6 +33,7 @@ for (const key of REQUIRED_ENV) {
 /* ──────────────────────── INIT ─────────────────────────────────── */
 
 const app = express();
+app.set('trust proxy', 1);
 const PORT = parseInt(process.env.PORT, 10) || 3000;
 
 // Gemini client initialization
@@ -183,6 +184,14 @@ app.get('/health', (_req, res) => {
 app.post('/analyze', async (req, res) => {
   try {
     const { sessionId, events } = req.body;
+    // console.log(`⚡ Received request for session: ${sessionId}`);
+
+    // // 2. FORCE TRIGGER: Hardcoded response to test the frontend popup
+    // return res.json({
+    //   trigger: true,
+    //   message: "FORCED TEST: Your Gemini integration is wired up correctly!"
+    // });
+
 
     if (!sessionId || typeof sessionId !== 'string') {
       return res.status(400).json({ error: 'Missing or invalid sessionId.' });
@@ -193,9 +202,9 @@ app.post('/analyze', async (req, res) => {
 
     const summary = buildSessionSummary(sessionId, events);
 
-    // if (summary.totalTimeSeconds < 60 || isOnCheckout(summary)) {
-    //   return res.json({ trigger: false });
-    // }
+    if (summary.totalTimeSeconds < 60 || isOnCheckout(summary)) {
+      return res.json({ trigger: false });
+    }
 
     const { system, userMessage } = buildPrompt(summary);
     const enriched = JSON.parse(userMessage);
